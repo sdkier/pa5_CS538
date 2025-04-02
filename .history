@@ -1,3 +1,7 @@
+:load test.ml
+:quit
+let rec f x = f x;
+:load test.ml
 :quit
 1:2:[]
 1:[]
@@ -94,7 +98,3 @@ quit
 1:[]
 :quit
 1:[]
-:quit
-1:2:[]
-1:[]
-[1,2,3]
