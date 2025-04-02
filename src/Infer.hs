@@ -213,16 +213,20 @@ infer env ex = case ex of
           return (nullSubst, TArray tv)
         (e:rest) -> do
           (s1, t1) <- infer env e
-          let inferElem (s, _) e = do
+          let inferElem (s, t) e = do
                 (s', t') <- infer (apply s env) e
-                s'' <- unify t1 t'
-                return (s'' `compose` s' `compose` s, t')
-          (s2, _) <- foldM inferElem (s1, t1) rest
-          -- Here we need to ensure nested empty lists get properly constrained
-          let finalType = apply s2 t1
-          case finalType of
-            TArray _ -> return (s2, TArray finalType)
-            _ -> return (s2, TArray (apply s2 t1))
+                s'' <- unify t t'
+                return (s'' `compose` s' `compose` s, apply s'' t')
+          (s2, elemType) <- foldM inferElem (s1, t1) rest
+          -- For nested arrays, we need to unify element types
+          case e of
+            Lit (LArray _) -> do
+              case elemType of
+                TArray innerType -> do
+                  s3 <- unify innerType (TCon "Int")  -- Force inner type to be Int
+                  return (s3 `compose` s2, TArray (apply s3 elemType))
+                _ -> return (s2, TArray elemType)
+            _ -> return (s2, TArray elemType)
 
   -- TODO-1: Handle an Array literal
   -- Suggestion: Use foldM with a folding function that unifies 
