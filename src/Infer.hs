@@ -218,18 +218,15 @@ infer env ex = case ex of
                 s'' <- unify t t'
                 return (s'' `compose` s' `compose` s, apply s'' t')
           (s2, elemType) <- foldM inferElem (s1, t1) rest
-          case e of
-            Lit (LArray []) -> do
-              -- For nested empty arrays, force Int type
-              s3 <- unify elemType (TArray (TCon "Int"))
-              return (s3 `compose` s2, TArray (apply s3 elemType))
-            Lit (LArray _) -> do
-              case elemType of
-                TArray innerType -> do
-                  s3 <- unify innerType (TCon "Int")
-                  return (s3 `compose` s2, TArray (apply s3 elemType))
-                _ -> return (s2, TArray elemType)
-            _ -> return (s2, TArray elemType)
+          -- First determine the element type
+          let finalElemType = case e of
+                Lit (LArray []) -> 
+                  case rest of
+                    [] -> TArray <$> fresh  -- Keep polymorphic if all empty
+                    _  -> return elemType   -- Use type from non-empty lists
+                _ -> return elemType
+          elemT <- finalElemType
+          return (s2, TArray elemT)
 
   -- TODO-1: Handle an Array literal
   -- Suggestion: Use foldM with a folding function that unifies 
