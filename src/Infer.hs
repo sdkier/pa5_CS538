@@ -160,6 +160,7 @@ inferPattern pat = case pat of
     s3 <- unify t2 (TArray t1)
     return (s3 `compose` s2 `compose` s1, t2)
 
+
 lookupEnv :: TypeEnv -> Var -> Infer (Subst, Type)
 lookupEnv (TypeEnv env) x =
   case Map.lookup x env of

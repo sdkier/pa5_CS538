@@ -61,11 +61,10 @@ match ((pat, expr):rest) val = case pat of
               then Just (expr, Map.empty)
               else match rest val
   PCons p1 p2 -> case val of
-    VArray (v:vs) -> case match [(p1, expr)] v of  -- Change undefined to expr
-      Just (_, env1) -> case match [(p2, expr)] (VArray vs) of  -- Change undefined to expr
-        Just (_, env2) -> Just (expr, env1 `Map.union` env2)
-        Nothing -> match rest val
-      Nothing -> match rest val
+    VArray (v:vs) -> do
+      (_, env1) <- match [(p1, expr)] v
+      (_, env2) <- match [(p2, expr)] (VArray vs)
+      return (expr, Map.union env1 env2)
     _ -> match rest val
 
 
@@ -110,16 +109,15 @@ eval env expr = case expr of
   Lam x body ->
     return $ VClosure [(x, body)] env
 
+-- TODO-2: Implement pattern matching in App
   App fun arg -> do
-    -- TODO-2: Implement pattern matching in App
-    closure <- eval env fun
-    argv <- eval env arg
-    case closure of
-      VClosure pats clo -> 
-        case match pats argv of
-          Just (body, matchEnv) -> eval (matchEnv `Map.union` clo) body
-          Nothing -> error "Pattern match failure"
-      _ -> error "Cannot apply non-function"
+      closure <- eval env fun
+      argv <- eval env arg
+      case closure of
+        VClosure pats clo -> 
+          case match pats argv of
+            Just (body, matchEnv) -> eval (matchEnv `Map.union` clo) body
+            Nothing -> error "Pattern match failure"
 
   Let x e body -> do
     e' <- eval env e
@@ -148,6 +146,6 @@ runEval env nm ex =
   let res = runIdentity (eval env ex)
       newEnv = case (Map.lookup nm env, res) of
         (Just (VClosure pats e), VClosure newPats _) -> 
-          Map.insert nm (VClosure (pats ++ newPats) e) env
+          Map.insert nm (VClosure (newPats ++ pats) e) env  -- New patterns should come first
         _ -> Map.insert nm res env
   in (res, newEnv)

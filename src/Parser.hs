@@ -46,17 +46,18 @@ fix = do
   Fix <$> expr
 
 pattern :: Parser Pattern
-pattern = try pcons
-      <|> try plit 
-      <|> pvar
+pattern = try pconsOrSimple <|> parens pattern
   where
+    pconsOrSimple = do
+      p1 <- patom
+      pconsRest p1
+    pconsRest p1 = (do
+        reservedOp ":"
+        p2 <- pattern
+        return $ PCons p1 p2) <|> return p1
+    patom = try pvar <|> try plit
     pvar = PVar <$> identifier
     plit = PLit <$> (number id <|> bool id)
-    pcons = parens $ do
-      p1 <- pattern
-      reservedOp ":"
-      p2 <- pattern
-      return $ PCons p1 p2
 
 -- TODO-2: use patterns instead of identifiers for args ^^ & VV
 lambda :: Parser Expr
@@ -139,10 +140,10 @@ letdecl :: Parser Binding
 letdecl = do
   reserved "let"
   name <- identifier
-  args <- many pattern
+  pat <- pattern  -- Changed: take single pattern instead of many
   reservedOp "="
   body <- expr
-  return (name, foldr Lam body args)
+  return (name, Lam pat body)  -- Changed: single pattern to expression
 
 -- TODO-2: use patterns instead of identifiers for args
 letrecdecl :: Parser (String, Expr)

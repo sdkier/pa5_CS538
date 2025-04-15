@@ -1,4 +1,89 @@
 :quit
+[1,2] ++ [3,4]
+let g (x:xs) = x
+let f x = x
+:quit
+[1,2] ++ [3,4]
+let g (x:xs) = x
+f 1
+let f x = x
+:quit
+let g (x:xs) = x
+let g x:xs = x
+let f x = x
+:quit
+let f x = x
+:quit
+let h (x:y:xs) = x + y
+let g (x:xs) = x
+let f x = x
+:quit
+let h (x:y:xs) = x + y
+let g (x:xs) = x
+let f x = x
+:quit
+let h (x:y:xs) = x + y
+let g (x:xs) = x
+let f x = x
+:quit
+let h (x:y:xs) = x + y
+:quit
+let h (x:y:xs) = x + y
+g [1,2,3]
+let g (x:xs) = x
+x
+let x = [1,2,3]
+:quit
+g [1,2,3]
+let g (x:xs) = x
+f 1
+let f x = x
+:quit
+g [1,2,3]
+let g (x:xs) = x
+f 1
+let f x = x
+:quit
+g
+let g (x:xs) = x
+f 1
+let f x = x
+x
+let x = 1
+:quit
+g [1,2,3]
+let g (x:xs) = x
+:quit
+let g (x:xs) = x
+:quit
+let g (x:xs) = x
+:quit
+[1,2] ++ [3,4]
+:quit
+1:[]
+[1]
+let g x = x
+:quit
+y + x
+x + y
+y
+x
+y + 2
+let y = 2
+x
+let x = 4
+let x = 3 + 4
+3+4
+:quit
+x
+let x = 3 + 2
+3 + 4
+let g (x:xs) = x
+[1,2] ++ [3,4]
+:quit
+[1,2] ++ [3,4]
+let g (x:xs) = x
+:quit
 let h (x:y:xs) = x + y
 f 5
 let f n = n + 1
@@ -13,88 +98,3 @@ let f 0 = 0
 f 0
 let f n = n
 let f 0 = 0
-:quit
-f 2
-let f x = x + 1
-f 2
-let f n = n + 1
-let f 1 = 1
-let f 0 = 0
-let f 0 = 0;;
-:quit
-x
-let x = 5
-:quit
-x
-let x = 1
-:load test.ml
-:quit
-let rec f x = f x;
-:load test.ml
-:quit
-1:2:[]
-1:[]
-[1,2,3]
-1:2:[]
-1:[]
-:quit
-1:[]
-:quit
-1:[]
-:quit
-1:[]
-:quit
-1:[]
-:quit
-1:[]
-:quit
-1:[]
-cabal run
-:quit
-1:[]
-:quit
-x
-let x = 1:[]
-:quit
-1:[2,3]
-let x = 1:[]
-1:[]
-:quit
-1:[2,3]
-1:[2,3}
-x
-let x = 1:[]
-:quit
-1:[]
-:quit
-1:[]
-:quit
-why nigga
-1:[]
-z
-y
-let z = 1:[]
-let y = [1,2,3]
-let x = []
-:quit
-let w = 3 + 2
-let z = 1:[]
-let y = [1,2,3]
-let x = []
-:quit
-let x = []
-:quit
-let f y = x + y
-let x = 3 + 2
-:quit
-let x = 3 + 2
-:quit
-let f y = x + y
-let x = 3
-let x = 3 + 2
-:quit
-let x = 3 + 2
-:quit
-let f y = x + y
-let x = 3
-let x = 3 + 2
