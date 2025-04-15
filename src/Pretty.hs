@@ -69,6 +69,7 @@ instance Pretty Binop where
   ppr _ Mul = text "*"
   ppr _ Eql = text "=="
   ppr _ Cons = text ":"  -- Added: Cons operator printing
+  ppr _ Concat = text "++" -- Added: Concat operator printing
   -- TODO-1: Add cons handling
   -- TODO-2: Add concat handling
 
@@ -93,6 +94,11 @@ instance Pretty Lit where
   -- TODO-1: Add LArray case
 
 -- TODO-2: Add the Pretty Pattern instance
+instance Pretty Pattern where
+  ppr :: Int -> Pattern -> Doc
+  ppr _ (PVar v) = text v
+  ppr p (PLit l) = ppr p l
+  ppr p (PCons x xs) = parens $ ppr p x <+> text ":" <+> ppr p xs
 
 instance Show TypeError where
   show :: TypeError -> String

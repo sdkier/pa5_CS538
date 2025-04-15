@@ -30,7 +30,8 @@ reservedOps = [
     "*",
     "-",
     ":",
-    "="
+    "=",
+    "++"
     -- TODO-1: Add handling for cons (:) operator
     -- TODO-2: Add handling for concat (++) operator
   ]

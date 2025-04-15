@@ -15,7 +15,7 @@ import qualified Data.Map as Map
 data Value
   = VInt Integer
   | VBool Bool
-  | VClosure String Expr TermEnv
+  | VClosure [(Pattern, Expr)] TermEnv  -- Changed from (String, Expr, TermEnv)
   | VArray [Value]    -- TODO-1: Create a way to store arrays
 
   -- TODO-1: Create a way to store arrays `VArray`
@@ -41,7 +41,10 @@ instance Show Value where
   -- TODO-1: Show VArr
 
 -- TODO-2: add a checkeq function to compare literals and values
--- checkeq :: Lit -> Value -> Bool
+checkeq :: Lit -> Value -> Bool
+checkeq (LInt n) (VInt m) = n == m
+checkeq (LBool b1) (VBool b2) = b1 == b2
+checkeq _ _ = False
 
 -- TODO-2: Add a match function to handle pattern matching
 -- match :: [(Pattern, Expr)] -> Value -> (Expr, TermEnv)
@@ -50,6 +53,20 @@ instance Show Value where
 -- 2. Is the pattern a PLit? -> match if the argument is equivalent to the literal
 -- 3. Is the pattern a (x:xs) structure? -> match if the argument is a non-empty list
 -- 4. Otherwise, check another pattern
+match :: [(Pattern, Expr)] -> Value -> Maybe (Expr, TermEnv)
+match [] _ = Nothing
+match ((pat, expr):rest) val = case pat of
+  PVar x -> Just (expr, Map.singleton x val)
+  PLit lit -> if checkeq lit val 
+              then Just (expr, Map.empty)
+              else match rest val
+  PCons p1 p2 -> case val of
+    VArray (v:vs) -> case match [(p1, expr)] v of  -- Change undefined to expr
+      Just (_, env1) -> case match [(p2, expr)] (VArray vs) of  -- Change undefined to expr
+        Just (_, env2) -> Just (expr, env1 `Map.union` env2)
+        Nothing -> match rest val
+      Nothing -> match rest val
+    _ -> match rest val
 
 
 eval :: TermEnv -> Expr -> Interpreter Value
@@ -75,27 +92,34 @@ eval env expr = case expr of
   -- Suggestion: Create a separate handler for this case
   --             because Cons is not the same type as other binop
 
-  Op op a b ->                    
-    case op of                    
-      Cons -> do                  
-        v1 <- eval env a
-        VArray vs <- eval env b
-        return $ VArray (v1:vs)
-      _ -> do                     
-        VInt a' <- eval env a
-        VInt b' <- eval env b
-        return $ binop op a' b'
+  Op op a b -> case op of
+    Cons -> do
+      v1 <- eval env a
+      VArray vs <- eval env b
+      return $ VArray (v1:vs)
+    Concat -> do
+      VArray vs1 <- eval env a
+      VArray vs2 <- eval env b
+      return $ VArray (vs1 ++ vs2)
+    _ -> do
+      VInt a' <- eval env a
+      VInt b' <- eval env b
+      return $ binop op a' b'
 
+  -- TODO-2: Change VClosure to store a list of patterns and expressions
   Lam x body ->
-    -- TODO-2: Change VClosure to store a list of patterns and expressions
-    return (VClosure x body env)
+    return $ VClosure [(x, body)] env
 
   App fun arg -> do
     -- TODO-2: Implement pattern matching in App
-    VClosure x body clo <- eval env fun
+    closure <- eval env fun
     argv <- eval env arg
-    let nenv = Map.insert x argv clo
-    eval nenv body
+    case closure of
+      VClosure pats clo -> 
+        case match pats argv of
+          Just (body, matchEnv) -> eval (matchEnv `Map.union` clo) body
+          Nothing -> error "Pattern match failure"
+      _ -> error "Cannot apply non-function"
 
   Let x e body -> do
     e' <- eval env e
@@ -121,5 +145,9 @@ binop Eql a b = VBool $ a == b
 --         (pattern, body) to the environment instead of overwriting it
 runEval :: TermEnv -> String -> Expr -> (Value, TermEnv)
 runEval env nm ex =
-  let res = runIdentity (eval env ex) in
-  (res, Map.insert nm res env)
+  let res = runIdentity (eval env ex)
+      newEnv = case (Map.lookup nm env, res) of
+        (Just (VClosure pats e), VClosure newPats _) -> 
+          Map.insert nm (VClosure (pats ++ newPats) e) env
+        _ -> Map.insert nm res env
+  in (res, newEnv)

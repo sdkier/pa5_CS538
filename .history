@@ -1,3 +1,32 @@
+:quit
+let h (x:y:xs) = x + y
+f 5
+let f n = n + 1
+let f 0 = 1
+[1,2] ++ [3,4]
+let g (x:xs) = x
+:quit
+f 1
+let f n = n
+let f 0 = 0
+:quit
+f 0
+let f n = n
+let f 0 = 0
+:quit
+f 2
+let f x = x + 1
+f 2
+let f n = n + 1
+let f 1 = 1
+let f 0 = 0
+let f 0 = 0;;
+:quit
+x
+let x = 5
+:quit
+x
+let x = 1
 :load test.ml
 :quit
 let rec f x = f x;
@@ -69,32 +98,3 @@ let x = 3 + 2
 let f y = x + y
 let x = 3
 let x = 3 + 2
-:quit
-1:2:[]
-1:[]
-1:[]
-1:2:[]
-1:[]
-[1,2,3]
-[]
-:quit
-[1,2,3]
-1:2:[]
-1:[]
-:quit
-1:2:[]
-1:[]
-[1,2,3]
-[]
-1+2
-:quit
-1:[]
-:quit
-1:2:[]
-1:[]
-1:[]
-:quit
-quit
-1:[]
-:quit
-1:[]

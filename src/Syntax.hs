@@ -6,7 +6,7 @@ type Var = String
 data Expr
   = Var Var
   | App Expr Expr
-  | Lam Var Expr
+  | Lam Pattern Expr
   | Let Var Expr Expr
   | Lit Lit
   | If Expr Expr Expr
@@ -24,7 +24,7 @@ data Lit
 
 -- TODO-1: Add a `Cons` operator
 -- TODO-2: Add a `Concat` operator
-data Binop = Add | Sub | Mul | Eql | Cons  -- Added Cons operator
+data Binop = Add | Sub | Mul | Eql | Cons | Concat -- Added Cons operator
   deriving (Eq, Ord, Show)
 
 -- TODO-2: Add a `Pattern` data type, capture the following cases:
@@ -35,6 +35,11 @@ data Binop = Add | Sub | Mul | Eql | Cons  -- Added Cons operator
 -- let f (x:xs) = ... -- non empty list, use `PCons`, storing two `Patterns`
 -- let f (x:[]) = ... -- list with one element
 -- let f (x:y:xs) = ... -- list with at least two elements
+data Pattern
+  = PVar Var          -- Variable pattern (x)
+  | PLit Lit          -- Literal pattern (0, True)
+  | PCons Pattern Pattern  -- List pattern (x:xs)
+  deriving (Show, Eq, Ord)
 
 type Decl = (String, Expr)
 

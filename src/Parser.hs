@@ -45,11 +45,24 @@ fix = do
   reservedOp "fix"
   Fix <$> expr
 
--- TODO-2: use patterns instead of identifiers for args
+pattern :: Parser Pattern
+pattern = try pcons
+      <|> try plit 
+      <|> pvar
+  where
+    pvar = PVar <$> identifier
+    plit = PLit <$> (number id <|> bool id)
+    pcons = parens $ do
+      p1 <- pattern
+      reservedOp ":"
+      p2 <- pattern
+      return $ PCons p1 p2
+
+-- TODO-2: use patterns instead of identifiers for args ^^ & VV
 lambda :: Parser Expr
 lambda = do
   reservedOp "\\"
-  args <- many identifier
+  args <- many pattern
   reservedOp "->"
   body <- expr
   return $ foldr Lam body args
@@ -109,6 +122,7 @@ infixOp x f = Ex.Infix (reservedOp x >> return f)
 table :: Operators Expr
 table = [
     [infixOp ":" (Op Cons) Ex.AssocRight],   -- Cons is right associative
+    [infixOp "++" (Op Concat) Ex.AssocRight], -- Concat is right associative
     [infixOp "*" (Op Mul) Ex.AssocLeft],
     [infixOp "+" (Op Add) Ex.AssocLeft,
      infixOp "-" (Op Sub) Ex.AssocLeft],
@@ -125,7 +139,7 @@ letdecl :: Parser Binding
 letdecl = do
   reserved "let"
   name <- identifier
-  args <- many identifier
+  args <- many pattern
   reservedOp "="
   body <- expr
   return (name, foldr Lam body args)
@@ -136,10 +150,10 @@ letrecdecl = do
   reserved "let"
   reserved "rec"
   name <- identifier
-  args <- many identifier
+  args <- many pattern
   reservedOp "="
   body <- expr
-  return (name, Fix $ foldr Lam body (name:args))
+  return (name, Fix $ foldr Lam body (PVar name:args))
 
 val :: Parser Binding
 val = do

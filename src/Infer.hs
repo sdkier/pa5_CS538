@@ -146,6 +146,20 @@ ops Mul = typeInt `TArrow` typeInt `TArrow` typeInt
 ops Sub = typeInt `TArrow` typeInt `TArrow` typeInt
 ops Eql = typeInt `TArrow` typeInt `TArrow` typeBool
 
+-- Add inferPattern here, before infer but after ops TODO-2
+inferPattern :: Pattern -> Infer (Subst, Type)
+inferPattern pat = case pat of
+  PVar _ -> do
+    tv <- fresh
+    return (nullSubst, tv)
+  PLit (LInt _) -> return (nullSubst, typeInt)
+  PLit (LBool _) -> return (nullSubst, typeBool)
+  PCons p1 p2 -> do
+    (s1, t1) <- inferPattern p1
+    (s2, t2) <- inferPattern p2
+    s3 <- unify t2 (TArray t1)
+    return (s3 `compose` s2 `compose` s1, t2)
+
 lookupEnv :: TypeEnv -> Var -> Infer (Subst, Type)
 lookupEnv (TypeEnv env) x =
   case Map.lookup x env of
@@ -161,10 +175,12 @@ infer env ex = case ex of
   -- TODO-2: Handle the different pattern values of `x`
   --         Each has its own implications for typing
   Lam x e -> do
-    tv <- fresh
-    let env' = env `extend` (x, Forall [] tv)
-    (s1, t1) <- infer env' e
-    return (s1, apply s1 tv `TArrow` t1)
+    (s1, t1) <- inferPattern x
+    let env' = case x of
+          PVar v -> env `extend` (v, Forall [] t1)
+          _ -> env
+    (s2, t2) <- infer (apply s1 env') e
+    return (s2 `compose` s1, apply s2 t1 `TArrow` t2)
 
   App e1 e2 -> do
     tv <- fresh
@@ -198,11 +214,18 @@ infer env ex = case ex of
 
   Op op e1 e2 -> case op of 
     Cons -> do
-      (s1, t1) <- infer env e1            -- Infer type of the element
-      (s2, t2) <- infer (apply s1 env) e2 -- Infer type of the rest of the list
-      s3 <- unify t2 (TArray (apply s2 t1))  -- Make sure t2 is an array of t1s
+      (s1, t1) <- infer env e1            
+      (s2, t2) <- infer (apply s1 env) e2 
+      s3 <- unify t2 (TArray (apply s2 t1))  
       return (s3 `compose` s2 `compose` s1, t2)
-    _ -> inferPrim env [e1, e2] (ops op)  -- Handle other operators normally
+    Concat -> do
+      (s1, t1) <- infer env e1
+      (s2, t2) <- infer (apply s1 env) e2
+      tv <- fresh
+      s3 <- unify t1 (TArray tv)
+      s4 <- unify t2 (TArray (apply s3 tv))
+      return (s4 `compose` s3 `compose` s2 `compose` s1, t2)
+    _ -> inferPrim env [e1, e2] (ops op)
 
   Lit (LInt _)  -> return (nullSubst, typeInt)
   Lit (LBool _) -> return (nullSubst, typeBool)
