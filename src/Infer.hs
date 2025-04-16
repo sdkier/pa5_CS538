@@ -233,6 +233,12 @@ infer env ex = case ex of
   -- Suggestion: Separate this from the other ops because the constraint
   --             is more generic than the other ops
   Op op e1 e2 -> case op of
+    Add -> do
+      (s1, t1) <- infer env e1
+      (s2, t2) <- infer (apply s1 env) e2
+      s3 <- unify t1 typeInt
+      s4 <- unify t2 typeInt
+      return (s4 `compose` s3 `compose` s2 `compose` s1, typeInt)
     Eql -> do
       (s1, t1) <- infer env e1
       (s2, t2) <- infer (apply s1 env) e2

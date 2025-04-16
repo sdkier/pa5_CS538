@@ -36,9 +36,10 @@ emptyTmenv = Map.empty
 instance Eq Value where
   (VInt a) == (VInt b) = a == b
   (VBool a) == (VBool b) = a == b
-  (VArray xs) == (VArray ys) = xs == ys
+  (VArray xs) == (VArray ys) = all (uncurry (==)) (zip xs ys) && length xs == length ys
+  (VClosure _ _) == (VClosure _ _) = False  -- Closures are never equal
   _ == _ = False
-  
+
 instance Show Value where
   show :: Value -> String
   show (VInt n) = show n

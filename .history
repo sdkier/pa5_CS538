@@ -1,4 +1,22 @@
 :quit
+id [1,2,3]
+let id x = x
+add 1 2  
+let add x y = x + y
+sum [1,2]
+let sum (x:y:[]) = x + y
+let sum (x:y:[]) = x + y
+head [1] 
+let head (x:[]) = x
+let empty = []
+1:xs
+xs ++ ys
+let ys = [4,5,6]
+let xs = [1,2,3]
+xs ++ ys
+let ys = [4,5,6]
+let xs = [1,2,3]
+:quit
 xs == ys
 let ys = [1] ++ [2,3]
 let xs = 1:2:3:[]
@@ -80,21 +98,3 @@ f 2
 f 1
 f 0
 let f n = n + 1
-let f 1 = 1
-let f 0 = 0
-:quit
-f 2
-f 1
-f 0
-let f n = n + 1
-let f 1 = 1
-let f 0 = 0
-:quit
-[1,2] ++ [3,4]
-[1,2] ++ [3,4}
-let h (x:y:xs) = x + y  
-let g (x:y:[]) = x + y 
-let f (x:[]) = x 
-:quit
-let h (x:y:xs) = x + y
-let g (x:y:[]) = x + y 
