@@ -1,100 +1,100 @@
 :quit
-[1,2] ++ [3,4]
-let g (x:xs) = x
-let f x = x
+xs == ys
+let ys = [1] ++ [2,3]
+let xs = 1:2:3:[]
+xs == ys
+let ys = [1] ++ [2,3]
+let xs = 1:2:3:[]
+xs == ys
+let ys = [1] ++ [2,3]
+let xs = 1:2:3:[]
+let empty = []
+1:xs
+xs ++ ys
+let ys = [4,5,6]
+let xs = [1,2,3]
 :quit
-[1,2] ++ [3,4]
-let g (x:xs) = x
-f 1
-let f x = x
+let eq = [1,2] == [1,2]
+let nested = [[1,2], [3,4]]
+let head (x:xs) = x
+let empty = []
 :quit
-let g (x:xs) = x
-let g x:xs = x
-let f x = x
+let eq = [1,2] == [1,2]
+let nested = [[1,2], [3,4]]
+let head (x:xs) = x
+let empty = []
+1:xs
+xs ++ ys
+let ys = [4,5,6]
+let xs = [1,2,3]
 :quit
-let f x = x
+let xs = [1,2,3]
 :quit
-let h (x:y:xs) = x + y
-let g (x:xs) = x
-let f x = x
-:quit
-let h (x:y:xs) = x + y
-let g (x:xs) = x
-let f x = x
-:quit
-let h (x:y:xs) = x + y
-let g (x:xs) = x
-let f x = x
-:quit
-let h (x:y:xs) = x + y
-:quit
-let h (x:y:xs) = x + y
-g [1,2,3]
-let g (x:xs) = x
-x
-let x = [1,2,3]
-:quit
-g [1,2,3]
-let g (x:xs) = x
-f 1
-let f x = x
-:quit
-g [1,2,3]
-let g (x:xs) = x
-f 1
-let f x = x
-:quit
-g
-let g (x:xs) = x
-f 1
-let f x = x
-x
-let x = 1
-:quit
-g [1,2,3]
-let g (x:xs) = x
-:quit
-let g (x:xs) = x
-:quit
-let g (x:xs) = x
-:quit
-[1,2] ++ [3,4]
-:quit
-1:[]
-[1]
-let g x = x
-:quit
-y + x
-x + y
-y
-x
-y + 2
-let y = 2
-x
-let x = 4
-let x = 3 + 4
-3+4
-:quit
-x
-let x = 3 + 2
-3 + 4
-let g (x:xs) = x
-[1,2] ++ [3,4]
-:quit
-[1,2] ++ [3,4]
-let g (x:xs) = x
-:quit
-let h (x:y:xs) = x + y
-f 5
+1:xs  
+xs ++ ys
+let ys = [4,5,6]
+let xs = [1,2,3]
+f 0
 let f n = n + 1
-let f 0 = 1
-[1,2] ++ [3,4]
-let g (x:xs) = x
-:quit
-f 1
-let f n = n
+let f 1 = 1
 let f 0 = 0
 :quit
 f 0
-let f n = n
+let f n = n + 1
+let f 1 = 1
 let f 0 = 0
+:quit
+f 0
+let f n = n + 1
+let f 1 = 1
+let f 0 = 0
+:quit
+f 0
+let f n = n + 1
+let f 1 = 1
+let f 0 = 0
+:quit
+f 0
+let f n = n + 1
+let f 1 = 1
+let f 0 = 0
+:quit
+f 0
+let f n = n + 1
+let f 1 = 1
+let f 0 = 0
+:quit
+f 0
+let f n = n + 1
+let f 1 = 1
+let f 0 = 0
+:quit
+f 2
+f 1
+f 0
+let f n = n + 1
+let f 1 = 1
+let f 0 = 0
+:quit
+f 2
+f 1
+f 0
+let f n = n + 1
+let f 1 = 1
+let f 0 = 0
+:quit
+f 2
+f 1
+f 0
+let f n = n + 1
+let f 1 = 1
+let f 0 = 0
+:quit
+[1,2] ++ [3,4]
+[1,2] ++ [3,4}
+let h (x:y:xs) = x + y  
+let g (x:y:[]) = x + y 
+let f (x:[]) = x 
+:quit
+let h (x:y:xs) = x + y
+let g (x:y:[]) = x + y 

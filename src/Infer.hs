@@ -144,20 +144,25 @@ ops :: Binop -> Type
 ops Add = typeInt `TArrow` typeInt `TArrow` typeInt
 ops Mul = typeInt `TArrow` typeInt `TArrow` typeInt
 ops Sub = typeInt `TArrow` typeInt `TArrow` typeInt
-ops Eql = typeInt `TArrow` typeInt `TArrow` typeBool
+ops Eql = t `TArrow` t `TArrow` typeBool  -- Make equality polymorphic
+  where t = TVar (TV "a")
 
 -- Add inferPattern here, before infer but after ops TODO-2
 inferPattern :: Pattern -> Infer (Subst, Type)
 inferPattern pat = case pat of
-  PVar _ -> do
+  PVar x -> do
     tv <- fresh
     return (nullSubst, tv)
   PLit (LInt _) -> return (nullSubst, typeInt)
   PLit (LBool _) -> return (nullSubst, typeBool)
+  PLit (LArray []) -> do
+    tv <- fresh
+    return (nullSubst, TArray tv)
   PCons p1 p2 -> do
     (s1, t1) <- inferPattern p1
     (s2, t2) <- inferPattern p2
-    s3 <- unify t2 (TArray t1)
+    tv <- fresh  -- Create fresh type variable for element type
+    s3 <- unify t2 (TArray t1)  -- Ensure p2 is an array of p1's type
     return (s3 `compose` s2 `compose` s1, t2)
 
 
@@ -168,6 +173,12 @@ lookupEnv (TypeEnv env) x =
     Just s  -> do t <- instantiate s
                   return (nullSubst, t)
 
+
+
+
+
+
+
 infer :: TypeEnv -> Expr -> Infer (Subst, Type)
 infer env ex = case ex of
 
@@ -175,14 +186,23 @@ infer env ex = case ex of
 
   -- TODO-2: Handle the different pattern values of `x`
   --         Each has its own implications for typing
-  Lam x e -> do
-    (s1, t1) <- inferPattern x
-    let env' = case x of
-          PVar v -> env `extend` (v, Forall [] t1)
-          _ -> env
+  Lam pat e -> do
+    (s1, t1) <- inferPattern pat
+    let addVarsToEnv :: Pattern -> Type -> TypeEnv -> TypeEnv
+        addVarsToEnv (PVar v) t env = env `extend` (v, Forall [] t)
+        addVarsToEnv (PCons p1 p2) t env = 
+          let elemType = case t of
+                TArray et -> et
+                _ -> t
+              env1 = addVarsToEnv p1 elemType env
+              env2 = addVarsToEnv p2 t env1
+          in env2
+        addVarsToEnv _ _ env = env
+
+    let env' = addVarsToEnv pat t1 env
     (s2, t2) <- infer (apply s1 env') e
     return (s2 `compose` s1, apply s2 t1 `TArrow` t2)
-
+  
   App e1 e2 -> do
     tv <- fresh
     (s1, t1) <- infer env e1
@@ -212,13 +232,14 @@ infer env ex = case ex of
   -- TODO-2: Handle the Concat operator
   -- Suggestion: Separate this from the other ops because the constraint
   --             is more generic than the other ops
-
-  Op op e1 e2 -> case op of 
-    Cons -> do
-      (s1, t1) <- infer env e1            
-      (s2, t2) <- infer (apply s1 env) e2 
-      s3 <- unify t2 (TArray (apply s2 t1))  
-      return (s3 `compose` s2 `compose` s1, t2)
+  Op op e1 e2 -> case op of
+    Eql -> do
+      (s1, t1) <- infer env e1
+      (s2, t2) <- infer (apply s1 env) e2
+      s3 <- unify t1 t2  -- Unify both types
+      return (s3 `compose` s2 `compose` s1, typeBool)
+    Mul -> inferPrim env [e1, e2] (ops Mul)
+    Sub -> inferPrim env [e1, e2] (ops Sub)
     Concat -> do
       (s1, t1) <- infer env e1
       (s2, t2) <- infer (apply s1 env) e2
@@ -226,7 +247,11 @@ infer env ex = case ex of
       s3 <- unify t1 (TArray tv)
       s4 <- unify t2 (TArray (apply s3 tv))
       return (s4 `compose` s3 `compose` s2 `compose` s1, t2)
-    _ -> inferPrim env [e1, e2] (ops op)
+    Cons -> do   
+      (s1, t1) <- infer env e1            
+      (s2, t2) <- infer (apply s1 env) e2 
+      s3 <- unify t2 (TArray (apply s2 t1))  
+      return (s3 `compose` s2 `compose` s1, t2)
 
   Lit (LInt _)  -> return (nullSubst, typeInt)
   Lit (LBool _) -> return (nullSubst, typeBool)

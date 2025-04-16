@@ -11,6 +11,7 @@ import Syntax
 
 import Control.Monad.Identity ( Identity(runIdentity) )
 import qualified Data.Map as Map
+import Debug.Trace (trace)
 
 data Value
   = VInt Integer
@@ -32,6 +33,12 @@ instance MonadFail Identity where
 emptyTmenv :: TermEnv
 emptyTmenv = Map.empty
 
+instance Eq Value where
+  (VInt a) == (VInt b) = a == b
+  (VBool a) == (VBool b) = a == b
+  (VArray xs) == (VArray ys) = xs == ys
+  _ == _ = False
+  
 instance Show Value where
   show :: Value -> String
   show (VInt n) = show n
@@ -55,21 +62,25 @@ checkeq _ _ = False
 -- 4. Otherwise, check another pattern
 match :: [(Pattern, Expr)] -> Value -> Maybe (Expr, TermEnv)
 match [] _ = Nothing
-match ((pat, expr):rest) val = case pat of
-  PVar x -> Just (expr, Map.singleton x val)
+match ((pat, expr):rest) val = trace ("Matching pattern: " ++ show pat) $ case pat of
+  PVar x -> trace ("Binding variable: " ++ x) $ Just (expr, Map.singleton x val)
+  PLit (LArray []) -> case val of
+    VArray [] -> trace "Matched empty array" $ Just (expr, Map.empty)
+    _ -> trace "Empty array match failed" $ match rest val
   PLit lit -> if checkeq lit val 
-              then Just (expr, Map.empty)
-              else match rest val
-  PCons p1 p2 -> case val of
+              then trace "Matched literal" $ Just (expr, Map.empty)
+              else trace "Literal match failed" $ match rest val
+  PCons p1 p2 -> trace ("Matching cons pattern: " ++ show p1 ++ ":" ++ show p2) $ case val of
     VArray (v:vs) -> do
-      (_, env1) <- match [(p1, expr)] v
-      (_, env2) <- match [(p2, expr)] (VArray vs)
-      return (expr, Map.union env1 env2)
-    _ -> match rest val
+      (body1, env1) <- match [(p1, expr)] v
+      (body2, env2) <- match [(p2, expr)] (VArray vs)
+      trace ("Cons match succeeded with envs: " ++ show env1 ++ " and " ++ show env2) $
+        return (expr, Map.union env1 env2)
+    _ -> trace "Cons match failed" $ match rest val
 
 
 eval :: TermEnv -> Expr -> Interpreter Value
-eval env expr = case expr of
+eval env expr = trace ("Evaluating: " ++ show expr ++ "\nWith env: " ++ show env) $ case expr of
   Lit (LInt k)  -> return $ VInt k
   Lit (LBool k) -> return $ VBool k
   Lit (LArray es) -> do    -- TODO-1: Handle evaluating arrays
@@ -100,6 +111,14 @@ eval env expr = case expr of
       VArray vs1 <- eval env a
       VArray vs2 <- eval env b
       return $ VArray (vs1 ++ vs2)
+    Eql -> do
+      v1 <- eval env a
+      v2 <- eval env b
+      case (v1, v2) of
+        (VInt i1, VInt i2) -> return $ VBool (i1 == i2)
+        (VBool b1, VBool b2) -> return $ VBool (b1 == b2)
+        (VArray xs, VArray ys) -> return $ VBool (xs == ys)
+        _ -> error "Cannot compare values of different types"
     _ -> do
       VInt a' <- eval env a
       VInt b' <- eval env b
@@ -111,13 +130,15 @@ eval env expr = case expr of
 
 -- TODO-2: Implement pattern matching in App
   App fun arg -> do
-      closure <- eval env fun
-      argv <- eval env arg
-      case closure of
-        VClosure pats clo -> 
-          case match pats argv of
-            Just (body, matchEnv) -> eval (matchEnv `Map.union` clo) body
-            Nothing -> error "Pattern match failure"
+    closure <- eval env fun
+    argv <- eval env arg
+    case closure of
+      VClosure pats clo -> 
+        case match pats argv of
+          Just (body, matchEnv) -> 
+            trace ("Pattern match succeeded. New env: " ++ show (matchEnv `Map.union` clo)) $
+              eval (matchEnv `Map.union` clo) body
+          Nothing -> error "Pattern match failure"
 
   Let x e body -> do
     e' <- eval env e

@@ -16,6 +16,7 @@ import qualified Data.Text.Lazy as L
 
 import Lexer
 import Syntax
+import Debug.Trace (trace)
 
 -- TODO-0: Bug! Check the github issues/pull-requests to try to fix this: 
 --       https://github.com/sdiehl/write-you-a-haskell
@@ -46,24 +47,46 @@ fix = do
   Fix <$> expr
 
 pattern :: Parser Pattern
-pattern = try pconsOrSimple <|> parens pattern
-  where
-    pconsOrSimple = do
-      p1 <- patom
-      pconsRest p1
-    pconsRest p1 = (do
-        reservedOp ":"
-        p2 <- pattern
-        return $ PCons p1 p2) <|> return p1
-    patom = try pvar <|> try plit
-    pvar = PVar <$> identifier
-    plit = PLit <$> (number id <|> bool id)
+pattern = do
+    trace "Starting pattern parse" $ return ()
+    p1 <- simplePattern
+    trace ("Got first pattern: " ++ show p1) $ return ()
+    let rest = try $ do
+            trace "Looking for cons" $ return ()
+            reservedOp ":"
+            p2 <- pattern  -- Recursively parse rest of pattern
+            trace ("Building cons pattern: " ++ show p1 ++ ":" ++ show p2) $ return ()
+            return $ PCons p1 p2
+        nocons = trace "No cons found, returning simple pattern" $ return p1
+    rest <|> nocons
 
--- TODO-2: use patterns instead of identifiers for args ^^ & VV
+simplePattern :: Parser Pattern
+simplePattern = trace "In simplePattern" $ 
+    try (trace "Trying empty" pempty)
+    <|> try (trace "Trying var" pvar)
+    <|> try (trace "Trying num" pnum)
+    <|> try (trace "Trying bool" pbool)
+    <|> parens pattern
+
+pvar :: Parser Pattern
+pvar = PVar <$> identifier
+
+pnum :: Parser Pattern
+pnum = PLit . LInt . fromIntegral <$> integer
+
+pbool :: Parser Pattern
+pbool = (reserved "True" >> return (PLit (LBool True)))
+    <|> (reserved "False" >> return (PLit (LBool False)))
+
+pempty :: Parser Pattern
+pempty = Tok.brackets lexer (return $ PLit (LArray []))
+
+
+-- TODO-2: use patterns instead of identifiers for args
 lambda :: Parser Expr
 lambda = do
   reservedOp "\\"
-  args <- many pattern
+  args <- many (try $ parens pattern <|> simplePattern)
   reservedOp "->"
   body <- expr
   return $ foldr Lam body args
@@ -98,20 +121,21 @@ ifthen = do
 
 --- TODO-1: Add parsing for list
 aexp :: Parser Expr
-aexp = parens expr
-  <|> list Lit      -- Add list parsing
-  <|> bool Lit
-  <|> number Lit
-  <|> ifthen
-  <|> fix
-  <|> try letrecin
-  <|> letin
-  <|> lambda
-  <|> variable
+aexp = trace "Parsing atomic expression" $ 
+    parens expr
+    <|> list Lit
+    <|> bool Lit
+    <|> try (trace "Trying number" $ number Lit)
+    <|> try (trace "Trying variable" $ variable)
+    <|> ifthen
+    <|> fix
+    <|> try letrecin
+    <|> letin
+    <|> lambda
 
 term :: Parser Expr
-term = aexp >>= \x ->
-                (many1 aexp >>= \xs -> return (foldl App x xs))
+term = trace "Parsing term" $ aexp >>= \x ->
+                (many1 aexp >>= \xs -> trace ("Found application terms: " ++ show xs) $ return (foldl App x xs))
                 <|> return x
 
 infixOp :: String -> (a -> a -> a) -> Ex.Assoc -> Op a
@@ -131,19 +155,22 @@ table = [
   ]
 
 expr :: Parser Expr
-expr = Ex.buildExpressionParser table term
+expr = trace "Parsing expression" $ Ex.buildExpressionParser table term
 
 type Binding = (String, Expr)
 
 -- TODO-2: use patterns instead of identifiers for args
 letdecl :: Parser Binding
-letdecl = do
+letdecl = trace "In letdecl" $ do
   reserved "let"
   name <- identifier
-  pat <- pattern  -- Changed: take single pattern instead of many
+  trace ("Parsing patterns for: " ++ name) $ return ()
+  args <- many pattern  -- Changed: collect all patterns
   reservedOp "="
   body <- expr
-  return (name, Lam pat body)  -- Changed: single pattern to expression
+  -- Create nested lambdas for all patterns
+  return (name, foldr Lam body args)
+
 
 -- TODO-2: use patterns instead of identifiers for args
 letrecdecl :: Parser (String, Expr)
@@ -151,7 +178,7 @@ letrecdecl = do
   reserved "let"
   reserved "rec"
   name <- identifier
-  args <- many pattern
+  args <- many (try $ parens pattern <|> simplePattern)
   reservedOp "="
   body <- expr
   return (name, Fix $ foldr Lam body (PVar name:args))
